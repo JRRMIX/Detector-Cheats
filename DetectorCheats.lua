@@ -2,75 +2,72 @@
 -- Detector Cheats 2026 - SOLO NOMBRE DE ROL ARRIBA
 -- Fly + Speed + BodyMovers + Roles visibles arriba del jugador
 -- =============================================
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-
 local localPlayer = Players.LocalPlayer
 
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
-local MAX_VERT_SPEED = 35
-local AIR_TIME_THRESHOLD = 5.5
+local MAX_VERT_SPEED = 45
+local AIR_TIME_THRESHOLD = 4.2          -- más estricto
 local GROUND_RAY_DIST = 18
 local CHEAT_FRAMES_TO_FLAG = 6
+local TELEPORT_THRESHOLD = 32           -- para detectar CFrame fly
 
 local playerData = {}
 local warnings = {}
 
+-- Nuevas tablas para detección mejorada
+local LAST_POS = {}
+local FLY_TIME = {}
+
 -- ==================== ROLES ====================
 local Roles = {
     -- Owners
-    ["SoufiwIsReal"]       = {Name = "Owner",  Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
-    ["SoufiwIsNotReal"]    = {Name = "Owner",  Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
-    ["MarkaDevSheriffs"]   = {Name = "Owner",  Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
-    -- ["EduardoMxe"]         = {Name = "Owner",  Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},  -- Eliminado
-
+    ["SoufiwIsReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
+    ["SoufiwIsNotReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
+    ["MarkaDevSheriffs"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
     -- Holders
-    ["top_creation"]       = {Name = "Holder", Emoji = "🟠", Color = Color3.fromRGB(255, 140, 0)},
-
+    ["top_creation"] = {Name = "Holder", Emoji = "🟠", Color = Color3.fromRGB(255, 140, 0)},
     -- Devs
-    ["Awastoki"]           = {Name = "Dev",    Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["decim8or"]           = {Name = "Dev",    Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["3ds_min"]            = {Name = "Dev",    Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["thecknisic"]         = {Name = "Dev",    Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["EnlocK"]             = {Name = "Dev",    Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-
+    ["Awastoki"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["decim8or"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["3ds_min"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["thecknisic"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["EnlocK"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
     -- Mods
-    ["w65vutRealVpxr"]     = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["PawitaTB"]           = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["xShuup"]             = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["Yere_22"]            = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["VynilTronix"]        = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["Souligraphy"]        = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["pszk"]               = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["TisBeDrewModAcc"]    = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["PAQUIXYZ"]           = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["justc2yber"]         = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["asriel_09yt"]        = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["cool_man8773"]       = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["eternalbinds"]       = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["SoufiwDev"]          = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["BIuIava"]            = {Name = "Mod",    Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-
+    ["w65vutRealVpxr"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["PawitaTB"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["xShuup"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["Yere_22"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["VynilTronix"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["Souligraphy"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["pszk"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["TisBeDrewModAcc"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["PAQUIXYZ"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["justc2yber"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["asriel_09yt"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["cool_man8773"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["eternalbinds"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["SoufiwDev"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["BIuIava"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
     -- Tester
-    ["PanCollin"]          = {Name = "Tester", Emoji = "🟣", Color = Color3.fromRGB(170, 0, 255)},
-
+    ["PanCollin"] = {Name = "Tester", Emoji = "🟣", Color = Color3.fromRGB(170, 0, 255)},
     -- MVP
-    ["xitadoriix"]         = {Name = "MVP - FAMOUS CREATOR", Emoji = "🌟", Color = Color3.fromRGB(255, 215, 0)},
-
+    ["xitadoriix"] = {Name = "MVP - FAMOUS CREATOR", Emoji = "🌟", Color = Color3.fromRGB(255, 215, 0)},
     -- Cat
-    ["Plutonem"]           = {Name = "Cat",    Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
-    ["JdmKooki"]           = {Name = "Cat",    Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
+    ["Plutonem"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
+    ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== CHEAT DETECTION (sin cambios) ====================
+-- ==================== CHEAT DETECTION MEJORADA ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
-           obj:IsA("LinearVelocity") or obj:IsA("BodyGyro") then
-            if not obj.Name:lower():find("anim") and not obj.Name:lower():find("game") then
+           obj:IsA("LinearVelocity") or obj:IsA("BodyGyro") or obj:IsA("VectorForce") then
+            local name = obj.Name:lower()
+            if not (name:find("anim") or name:find("game") or name:find("default") or name:find("ragdoll")) then
                 return true
             end
         end
@@ -83,11 +80,22 @@ local function getGroundInfo(root)
     rayParams.FilterDescendantsInstances = {root.Parent}
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
     rayParams.IgnoreWater = true
-    local result = Workspace:Raycast(root.Position + Vector3.new(0, 3, 0), Vector3.new(0, -GROUND_RAY_DIST, 0), rayParams)
-    if result then
-        return true, (root.Position.Y - result.Position.Y)
+    
+    local onGround = false
+    local dist = GROUND_RAY_DIST + 15
+    
+    -- Raycasts desde varios puntos para mayor precisión
+    for _, offset in ipairs({Vector3.new(0,3,0), Vector3.new(2,3,0), Vector3.new(-2,3,0)}) do
+        local result = Workspace:Raycast(root.Position + offset, Vector3.new(0, -GROUND_RAY_DIST, 0), rayParams)
+        if result then
+            local currentDist = (root.Position.Y - result.Position.Y)
+            if currentDist < 6 then
+                onGround = true
+            end
+            if currentDist < dist then dist = currentDist end
+        end
     end
-    return false, GROUND_RAY_DIST + 15
+    return onGround, dist
 end
 
 local function createWarning(player, reasons)
@@ -95,12 +103,12 @@ local function createWarning(player, reasons)
     if not char then return end
     local adornee = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
     if not adornee then return end
-   
+  
     if warnings[player] then
         warnings[player].sub.Text = "(" .. table.concat(reasons, " + ") .. ")"
         return
     end
-   
+  
     local hl = Instance.new("Highlight")
     hl.Adornee = char
     hl.Parent = char
@@ -109,14 +117,14 @@ local function createWarning(player, reasons)
     hl.OutlineColor = Color3.fromRGB(255, 0, 0)
     hl.OutlineTransparency = 0
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-   
+  
     local bb = Instance.new("BillboardGui")
     bb.Adornee = adornee
     bb.Parent = adornee
     bb.Size = UDim2.new(0, 200, 0, 70)
     bb.StudsOffset = Vector3.new(0, 4.5, 0)
     bb.AlwaysOnTop = true
-   
+  
     local main = Instance.new("TextLabel")
     main.Parent = bb
     main.Size = UDim2.new(1,0,0.55,0)
@@ -126,7 +134,7 @@ local function createWarning(player, reasons)
     main.TextScaled = true
     main.Font = Enum.Font.GothamBlack
     main.TextStrokeTransparency = 0
-   
+  
     local sub = Instance.new("TextLabel")
     sub.Parent = bb
     sub.Size = UDim2.new(1,0,0.45,0)
@@ -137,7 +145,7 @@ local function createWarning(player, reasons)
     sub.TextScaled = true
     sub.Font = Enum.Font.Gotham
     sub.TextStrokeTransparency = 0.5
-   
+  
     warnings[player] = {hl = hl, bb = bb, sub = sub}
 end
 
@@ -151,54 +159,73 @@ end
 
 local function checkPlayer(player)
     local char = player.Character
-    if not char then removeWarning(player) playerData[player] = nil return end
-   
+    if not char then 
+        removeWarning(player) 
+        playerData[player] = nil 
+        LAST_POS[player] = nil
+        FLY_TIME[player] = nil
+        return 
+    end
+  
     local root = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChild("Humanoid")
     if not root or not hum or hum.Health <= 0 then return end
-   
+  
     if not playerData[player] then
-        playerData[player] = {airTime = 0, frames = 0, reasons = {}}
+        playerData[player] = {frames = 0}
     end
-   
-    local data = playerData[player]
+    if not FLY_TIME[player] then FLY_TIME[player] = 0 end
+
     local currentReasons = {}
     local cheating = false
 
     local onGround, dist = getGroundInfo(root)
     local vertVelAbs = math.abs(root.Velocity.Y)
+    local horiz = (root.Velocity * Vector3.new(1,0,1)).Magnitude
+
+    -- === Detección Fly mejorada ===
+    local last = LAST_POS[player]
+    LAST_POS[player] = root.Position
+
     local inAirSusp = not onGround and dist > 7 and hum.FloorMaterial == Enum.Material.Air
-   
+
     if inAirSusp then
-        data.airTime = data.airTime + 0.033
-        if data.airTime > AIR_TIME_THRESHOLD or vertVelAbs > MAX_VERT_SPEED then
+        FLY_TIME[player] = FLY_TIME[player] + 0.033
+
+        -- Detección CFrame / Teleport Fly
+        if last and (root.Position - last).Magnitude > TELEPORT_THRESHOLD and vertVelAbs < 25 then
+            table.insert(currentReasons, "CFrame-Fly")
+            cheating = true
+        end
+
+        if FLY_TIME[player] > AIR_TIME_THRESHOLD or vertVelAbs > MAX_VERT_SPEED then
             table.insert(currentReasons, "Fly")
             cheating = true
         end
     else
-        data.airTime = math.max(0, data.airTime - 2)
+        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 1.8)
     end
-   
+
+    -- BodyMovers
     if hasUnauthorizedBodyMover(char) then
         table.insert(currentReasons, "BodyMover")
         cheating = true
     end
-   
-    local horiz = (root.Velocity * Vector3.new(1,0,1)).Magnitude
+
+    -- Speed
     if horiz > MAX_HORIZ_SPEED and hum.MoveDirection.Magnitude > 0.05 then
         table.insert(currentReasons, "Speed")
         cheating = true
     end
-   
+
     if cheating then
-        data.reasons = currentReasons
-        data.frames = (data.frames or 0) + 1
-        if data.frames >= CHEAT_FRAMES_TO_FLAG then
+        playerData[player].frames = (playerData[player].frames or 0) + 1
+        if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
             createWarning(player, currentReasons)
         end
     else
         removeWarning(player)
-        data.frames = 0
+        playerData[player].frames = 0
     end
 end
 
@@ -207,12 +234,10 @@ local function createRoleLabel(character, roleInfo)
     if not character then return end
     local head = character:FindFirstChild("Head")
     if not head then return end
-
     -- Eliminar label anterior si existe
     for _, v in ipairs(head:GetChildren()) do
         if v.Name == "RoleLabel" then v:Destroy() end
     end
-
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "RoleLabel"
     billboard.Adornee = head
@@ -221,7 +246,6 @@ local function createRoleLabel(character, roleInfo)
     billboard.AlwaysOnTop = true
     billboard.LightInfluence = 0
     billboard.Parent = head
-
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1, 0, 1, 0)
     text.BackgroundTransparency = 1
@@ -262,6 +286,8 @@ Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(function(plr)
     removeWarning(plr)
     playerData[plr] = nil
+    LAST_POS[plr] = nil
+    FLY_TIME[plr] = nil
 end)
 
 for _, plr in ipairs(Players:GetPlayers()) do
@@ -273,5 +299,5 @@ if localPlayer.Character then
     onCharacterAdded(localPlayer.Character, localPlayer)
 end
 
-print("✅ Detector cargado correctamente")
+print("✅ Detector cargado correctamente (versión mejorada 2026)")
 print("EduardoMxe eliminado como Owner - Solo muestra nombre de rol arriba del jugador")
