@@ -10,16 +10,16 @@ local localPlayer = Players.LocalPlayer
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
-local AIR_TIME_THRESHOLD = 4          -- más sensible
+local AIR_TIME_THRESHOLD = 3.2          -- subido para evitar falsos positivos en saltos
 local GROUND_RAY_DIST = 25
-local CHEAT_FRAMES_TO_FLAG = 4         -- <<<<< CAMBIO PRINCIPAL (más rápido)
+local CHEAT_FRAMES_TO_FLAG = 3
 local TELEPORT_THRESHOLD = 24
 local LOW_FLY_THRESHOLD = 9.0
+local MAX_NORMAL_JUMP_TIME = 1.8        -- tiempo máximo razonable para un salto normal
 
 local playerData = {}
 local warnings = {}
 
--- Tablas para detección
 local LAST_POS = {}
 local FLY_TIME = {}
 local LAST_CHECK = {}
@@ -184,22 +184,26 @@ local function checkPlayer(player)
     if inAir or dist > LOW_FLY_THRESHOLD then
         FLY_TIME[player] = FLY_TIME[player] + (tick() - LAST_CHECK[player])
 
+        -- Detección de Low Fly
         if dist > LOW_FLY_THRESHOLD and dist < 18 then
             table.insert(currentReasons, "Low-Fly")
             cheating = true
         end
 
+        -- Detección de CFrame Fly
         if lastPos and (root.Position - lastPos).Magnitude > TELEPORT_THRESHOLD then
             table.insert(currentReasons, "CFrame-Fly")
             cheating = true
         end
 
+        -- Solo marca Fly si lleva más tiempo del normal en el aire
         if FLY_TIME[player] > AIR_TIME_THRESHOLD or vertVel > MAX_VERT_SPEED then
             table.insert(currentReasons, "Fly")
             cheating = true
         end
     else
-        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 2.8)
+        -- Resetea más rápido cuando toca el suelo (evita falsos positivos en saltos)
+        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 3.5)
     end
 
     LAST_CHECK[player] = tick()
@@ -298,4 +302,4 @@ if localPlayer.Character then
 end
 
 print("✅ Detector cargado correctamente")
-print("Detección de Fly mucho más RÁPIDA (3 frames)")
+print("Ahora NO detecta saltos normales (solo fly real)")
