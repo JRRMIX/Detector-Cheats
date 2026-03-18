@@ -10,12 +10,12 @@ local localPlayer = Players.LocalPlayer
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
-local AIR_TIME_THRESHOLD = 4.5          -- subido para evitar falsos positivos en saltos
+local AIR_TIME_THRESHOLD = 5         -- subido para evitar falsos positivos en saltos
 local GROUND_RAY_DIST = 25
 local CHEAT_FRAMES_TO_FLAG = 3
 local TELEPORT_THRESHOLD = 24
 local LOW_FLY_THRESHOLD = 9.0
-local MAX_NORMAL_JUMP_TIME = 2.5        -- tiempo máximo razonable para un salto normal
+local MAX_NORMAL_JUMP_TIME = 3        -- tiempo máximo razonable para un salto normal
 
 local playerData = {}
 local warnings = {}
