@@ -10,16 +10,16 @@ local localPlayer = Players.LocalPlayer
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
-local AIR_TIME_THRESHOLD = 2.8          -- más bajo y sensible
-local GROUND_RAY_DIST = 25               -- rayo más largo
-local CHEAT_FRAMES_TO_FLAG = 6
-local TELEPORT_THRESHOLD = 26
-local LOW_FLY_THRESHOLD = 8.5           -- NUEVO: detecta fly a altura baja
+local AIR_TIME_THRESHOLD = 2.5          -- más sensible
+local GROUND_RAY_DIST = 25
+local CHEAT_FRAMES_TO_FLAG = 3          -- <<<<< CAMBIO PRINCIPAL (más rápido)
+local TELEPORT_THRESHOLD = 24
+local LOW_FLY_THRESHOLD = 9.0
 
 local playerData = {}
 local warnings = {}
 
--- Tablas para detección mejorada
+-- Tablas para detección
 local LAST_POS = {}
 local FLY_TIME = {}
 local LAST_CHECK = {}
@@ -56,7 +56,7 @@ local Roles = {
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== CHEAT DETECTION MEJORADA (especialmente bajas alturas) ====================
+-- ==================== CHEAT DETECTION ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
@@ -79,11 +79,7 @@ local function getGroundInfo(root)
     local onGround = false
     local minDist = GROUND_RAY_DIST + 15
     
-    -- Más raycasts para detectar mejor en alturas bajas y bordes
-    for _, offset in ipairs({
-        Vector3.new(0, 5, 0), Vector3.new(2, 5, 0), Vector3.new(-2, 5, 0),
-        Vector3.new(0, 3, 0), Vector3.new(1.5, 3, 0), Vector3.new(-1.5, 3, 0)
-    }) do
+    for _, offset in ipairs({Vector3.new(0,5,0), Vector3.new(2.2,5,0), Vector3.new(-2.2,5,0), Vector3.new(0,3,0)}) do
         local result = Workspace:Raycast(root.Position + offset, Vector3.new(0, -GROUND_RAY_DIST, 0), rayParams)
         if result then
             local dist = root.Position.Y - result.Position.Y
@@ -154,7 +150,7 @@ local function removeWarning(player)
 end
 
 local function checkPlayer(player)
-    if player == localPlayer then return end   -- No te detecta a ti
+    if player == localPlayer then return end
     
     local char = player.Character
     if not char then 
@@ -188,9 +184,8 @@ local function checkPlayer(player)
     if inAir or dist > LOW_FLY_THRESHOLD then
         FLY_TIME[player] = FLY_TIME[player] + (tick() - LAST_CHECK[player])
 
-        -- Detección fuerte en alturas bajas
-        if dist > LOW_FLY_THRESHOLD and dist < 15 then
-            table.insert(currentReasons, "Low-Fly (Delta)")
+        if dist > LOW_FLY_THRESHOLD and dist < 18 then
+            table.insert(currentReasons, "Low-Fly")
             cheating = true
         end
 
@@ -204,7 +199,7 @@ local function checkPlayer(player)
             cheating = true
         end
     else
-        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 2.5)
+        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 2.8)
     end
 
     LAST_CHECK[player] = tick()
@@ -221,9 +216,10 @@ local function checkPlayer(player)
 
     if cheating and #currentReasons > 0 then
         playerData[player].frames = (playerData[player].frames or 0) + 1
+        
         if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
             createWarning(player, currentReasons)
-            print("🚨 CHEATER DETECTADO (baja altura): " .. player.Name .. " -> " .. table.concat(currentReasons, " + "))
+            print("🚨 CHEATER DETECTADO: " .. player.Name .. " -> " .. table.concat(currentReasons, " + "))
         end
     else
         removeWarning(player)
@@ -231,7 +227,7 @@ local function checkPlayer(player)
     end
 end
 
--- ==================== ROLES Y EL RESTO (SIN CAMBIOS) ====================
+-- ==================== ROLES (SIN CAMBIOS) ====================
 local function createRoleLabel(character, roleInfo)
     if not character then return end
     local head = character:FindFirstChild("Head")
@@ -302,4 +298,4 @@ if localPlayer.Character then
 end
 
 print("✅ Detector cargado correctamente")
-print("Mejorado para detectar Fly en alturas bajas (Low-Fly)")
+print("Detección de Fly mucho más RÁPIDA (3 frames)")
