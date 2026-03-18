@@ -10,35 +10,30 @@ local localPlayer = Players.LocalPlayer
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
-local AIR_TIME_THRESHOLD = 3.8          -- más estricto
+local AIR_TIME_THRESHOLD = 3.8
 local GROUND_RAY_DIST = 20
 local CHEAT_FRAMES_TO_FLAG = 5
-local TELEPORT_THRESHOLD = 28           -- detecta CFrame fly fuerte
-local MAX_ALLOWED_DISTANCE_PER_FRAME = 35
+local TELEPORT_THRESHOLD = 28
 
 local playerData = {}
 local warnings = {}
 
--- Tablas nuevas para mejor detección de Fly (NO toqué nada de roles)
+-- Tablas para Fly mejorado
 local LAST_POS = {}
 local FLY_TIME = {}
 local LAST_CHECK = {}
 
--- ==================== ROLES ====================
+-- ==================== ROLES (SIN CAMBIOS) ====================
 local Roles = {
-    -- Owners
     ["SoufiwIsReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
     ["SoufiwIsNotReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
     ["MarkaDevSheriffs"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
-    -- Holders
     ["top_creation"] = {Name = "Holder", Emoji = "🟠", Color = Color3.fromRGB(255, 140, 0)},
-    -- Devs
     ["Awastoki"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
     ["decim8or"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
     ["3ds_min"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
     ["thecknisic"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
     ["EnlocK"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    -- Mods
     ["w65vutRealVpxr"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
     ["PawitaTB"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
     ["xShuup"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
@@ -54,16 +49,13 @@ local Roles = {
     ["eternalbinds"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
     ["SoufiwDev"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
     ["BIuIava"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    -- Tester
     ["PanCollin"] = {Name = "Tester", Emoji = "🟣", Color = Color3.fromRGB(170, 0, 255)},
-    -- MVP
     ["xitadoriix"] = {Name = "MVP - FAMOUS CREATOR", Emoji = "🌟", Color = Color3.fromRGB(255, 215, 0)},
-    -- Cat
     ["Plutonem"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== CHEAT DETECTION (Fly mejorado) ====================
+-- ==================== CHEAT DETECTION ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
@@ -157,6 +149,9 @@ local function removeWarning(player)
 end
 
 local function checkPlayer(player)
+    -- ==================== FIX PRINCIPAL ====================
+    if player == localPlayer then return end  -- <--- NO TE DETECTA A TI
+    
     local char = player.Character
     if not char then 
         removeWarning(player) 
@@ -181,7 +176,6 @@ local function checkPlayer(player)
     local vertVel = math.abs(root.Velocity.Y)
     local horiz = (root.Velocity * Vector3.new(1,0,1)).Magnitude
 
-    -- === FLY DETECTION MEJORADA (CFrame + Velocity + Tiempo) ===
     local lastPos = LAST_POS[player]
     LAST_POS[player] = root.Position
 
@@ -190,13 +184,11 @@ local function checkPlayer(player)
     if inAir then
         FLY_TIME[player] = FLY_TIME[player] + (tick() - LAST_CHECK[player])
 
-        -- Detección fuerte de CFrame Fly (salto grande de posición)
         if lastPos and (root.Position - lastPos).Magnitude > TELEPORT_THRESHOLD then
-            table.insert(currentReasons, "CFrame-Fly")
+            table.insert(currentReasons, "CFrame-Fly (Delta)")
             cheating = true
         end
 
-        -- Detección normal de Fly por tiempo/velocidad
         if FLY_TIME[player] > AIR_TIME_THRESHOLD or vertVel > MAX_VERT_SPEED then
             table.insert(currentReasons, "Fly")
             cheating = true
@@ -207,13 +199,11 @@ local function checkPlayer(player)
 
     LAST_CHECK[player] = tick()
 
-    -- BodyMover (sin cambios)
     if hasUnauthorizedBodyMover(char) then
         table.insert(currentReasons, "BodyMover")
         cheating = true
     end
 
-    -- Speed (sin cambios)
     if horiz > MAX_HORIZ_SPEED and hum.MoveDirection.Magnitude > 0.05 then
         table.insert(currentReasons, "Speed")
         cheating = true
@@ -223,6 +213,7 @@ local function checkPlayer(player)
         playerData[player].frames = (playerData[player].frames or 0) + 1
         if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
             createWarning(player, currentReasons)
+            print("🚨 CHEATER DETECTADO: " .. player.Name .. " -> " .. table.concat(currentReasons, " + "))
         end
     else
         removeWarning(player)
@@ -230,7 +221,7 @@ local function checkPlayer(player)
     end
 end
 
--- ==================== SOLO NOMBRE DE ROL ARRIBA (sin tocar) ====================
+-- ==================== ROLES Y EL RESTO (SIN CAMBIOS) ====================
 local function createRoleLabel(character, roleInfo)
     if not character then return end
     local head = character:FindFirstChild("Head")
@@ -300,5 +291,5 @@ if localPlayer.Character then
     onCharacterAdded(localPlayer.Character, localPlayer)
 end
 
-print("✅ Detector cargado correctamente (Fly mejorado 2026)")
-print("EduardoMxe eliminado como Owner - Solo muestra nombre de rol arriba del jugador")
+print("✅ Detector cargado correctamente")
+print("Ahora SOLO detecta a los DEMÁS (no a ti)")
