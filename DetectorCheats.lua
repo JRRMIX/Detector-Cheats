@@ -9,18 +9,20 @@ local localPlayer = Players.LocalPlayer
 
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
-local MAX_VERT_SPEED = 45
-local AIR_TIME_THRESHOLD = 4.2          -- más estricto
-local GROUND_RAY_DIST = 18
-local CHEAT_FRAMES_TO_FLAG = 6
-local TELEPORT_THRESHOLD = 32           -- para detectar CFrame fly
+local MAX_VERT_SPEED = 48
+local AIR_TIME_THRESHOLD = 3.8          -- más estricto
+local GROUND_RAY_DIST = 20
+local CHEAT_FRAMES_TO_FLAG = 5
+local TELEPORT_THRESHOLD = 28           -- detecta CFrame fly fuerte
+local MAX_ALLOWED_DISTANCE_PER_FRAME = 35
 
 local playerData = {}
 local warnings = {}
 
--- Nuevas tablas para detección mejorada
+-- Tablas nuevas para mejor detección de Fly (NO toqué nada de roles)
 local LAST_POS = {}
 local FLY_TIME = {}
+local LAST_CHECK = {}
 
 -- ==================== ROLES ====================
 local Roles = {
@@ -61,7 +63,7 @@ local Roles = {
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== CHEAT DETECTION MEJORADA ====================
+-- ==================== CHEAT DETECTION (Fly mejorado) ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
@@ -82,20 +84,17 @@ local function getGroundInfo(root)
     rayParams.IgnoreWater = true
     
     local onGround = false
-    local dist = GROUND_RAY_DIST + 15
+    local minDist = GROUND_RAY_DIST + 15
     
-    -- Raycasts desde varios puntos para mayor precisión
-    for _, offset in ipairs({Vector3.new(0,3,0), Vector3.new(2,3,0), Vector3.new(-2,3,0)}) do
+    for _, offset in ipairs({Vector3.new(0,4,0), Vector3.new(2.5,4,0), Vector3.new(-2.5,4,0), Vector3.new(0,2,0)}) do
         local result = Workspace:Raycast(root.Position + offset, Vector3.new(0, -GROUND_RAY_DIST, 0), rayParams)
         if result then
-            local currentDist = (root.Position.Y - result.Position.Y)
-            if currentDist < 6 then
-                onGround = true
-            end
-            if currentDist < dist then dist = currentDist end
+            local dist = root.Position.Y - result.Position.Y
+            if dist < 6.5 then onGround = true end
+            if dist < minDist then minDist = dist end
         end
     end
-    return onGround, dist
+    return onGround, minDist
 end
 
 local function createWarning(player, reasons)
@@ -171,54 +170,56 @@ local function checkPlayer(player)
     local hum = char:FindFirstChild("Humanoid")
     if not root or not hum or hum.Health <= 0 then return end
   
-    if not playerData[player] then
-        playerData[player] = {frames = 0}
-    end
+    if not playerData[player] then playerData[player] = {frames = 0} end
     if not FLY_TIME[player] then FLY_TIME[player] = 0 end
+    if not LAST_CHECK[player] then LAST_CHECK[player] = tick() end
 
     local currentReasons = {}
     local cheating = false
 
     local onGround, dist = getGroundInfo(root)
-    local vertVelAbs = math.abs(root.Velocity.Y)
+    local vertVel = math.abs(root.Velocity.Y)
     local horiz = (root.Velocity * Vector3.new(1,0,1)).Magnitude
 
-    -- === Detección Fly mejorada ===
-    local last = LAST_POS[player]
+    -- === FLY DETECTION MEJORADA (CFrame + Velocity + Tiempo) ===
+    local lastPos = LAST_POS[player]
     LAST_POS[player] = root.Position
 
-    local inAirSusp = not onGround and dist > 7 and hum.FloorMaterial == Enum.Material.Air
+    local inAir = not onGround and dist > 7 and hum.FloorMaterial == Enum.Material.Air
 
-    if inAirSusp then
-        FLY_TIME[player] = FLY_TIME[player] + 0.033
+    if inAir then
+        FLY_TIME[player] = FLY_TIME[player] + (tick() - LAST_CHECK[player])
 
-        -- Detección CFrame / Teleport Fly
-        if last and (root.Position - last).Magnitude > TELEPORT_THRESHOLD and vertVelAbs < 25 then
+        -- Detección fuerte de CFrame Fly (salto grande de posición)
+        if lastPos and (root.Position - lastPos).Magnitude > TELEPORT_THRESHOLD then
             table.insert(currentReasons, "CFrame-Fly")
             cheating = true
         end
 
-        if FLY_TIME[player] > AIR_TIME_THRESHOLD or vertVelAbs > MAX_VERT_SPEED then
+        -- Detección normal de Fly por tiempo/velocidad
+        if FLY_TIME[player] > AIR_TIME_THRESHOLD or vertVel > MAX_VERT_SPEED then
             table.insert(currentReasons, "Fly")
             cheating = true
         end
     else
-        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 1.8)
+        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 2.2)
     end
 
-    -- BodyMovers
+    LAST_CHECK[player] = tick()
+
+    -- BodyMover (sin cambios)
     if hasUnauthorizedBodyMover(char) then
         table.insert(currentReasons, "BodyMover")
         cheating = true
     end
 
-    -- Speed
+    -- Speed (sin cambios)
     if horiz > MAX_HORIZ_SPEED and hum.MoveDirection.Magnitude > 0.05 then
         table.insert(currentReasons, "Speed")
         cheating = true
     end
 
-    if cheating then
+    if cheating and #currentReasons > 0 then
         playerData[player].frames = (playerData[player].frames or 0) + 1
         if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
             createWarning(player, currentReasons)
@@ -229,12 +230,11 @@ local function checkPlayer(player)
     end
 end
 
--- ==================== SOLO NOMBRE DE ROL ARRIBA ====================
+-- ==================== SOLO NOMBRE DE ROL ARRIBA (sin tocar) ====================
 local function createRoleLabel(character, roleInfo)
     if not character then return end
     local head = character:FindFirstChild("Head")
     if not head then return end
-    -- Eliminar label anterior si existe
     for _, v in ipairs(head:GetChildren()) do
         if v.Name == "RoleLabel" then v:Destroy() end
     end
@@ -288,6 +288,7 @@ Players.PlayerRemoving:Connect(function(plr)
     playerData[plr] = nil
     LAST_POS[plr] = nil
     FLY_TIME[plr] = nil
+    LAST_CHECK[plr] = nil
 end)
 
 for _, plr in ipairs(Players:GetPlayers()) do
@@ -299,5 +300,5 @@ if localPlayer.Character then
     onCharacterAdded(localPlayer.Character, localPlayer)
 end
 
-print("✅ Detector cargado correctamente (versión mejorada 2026)")
+print("✅ Detector cargado correctamente (Fly mejorado 2026)")
 print("EduardoMxe eliminado como Owner - Solo muestra nombre de rol arriba del jugador")
