@@ -10,15 +10,16 @@ local localPlayer = Players.LocalPlayer
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
-local AIR_TIME_THRESHOLD = 3.8
-local GROUND_RAY_DIST = 20
-local CHEAT_FRAMES_TO_FLAG = 5
-local TELEPORT_THRESHOLD = 28
+local AIR_TIME_THRESHOLD = 2.8          -- más bajo y sensible
+local GROUND_RAY_DIST = 25               -- rayo más largo
+local CHEAT_FRAMES_TO_FLAG = 6
+local TELEPORT_THRESHOLD = 26
+local LOW_FLY_THRESHOLD = 8.5           -- NUEVO: detecta fly a altura baja
 
 local playerData = {}
 local warnings = {}
 
--- Tablas para Fly mejorado
+-- Tablas para detección mejorada
 local LAST_POS = {}
 local FLY_TIME = {}
 local LAST_CHECK = {}
@@ -55,7 +56,7 @@ local Roles = {
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== CHEAT DETECTION ====================
+-- ==================== CHEAT DETECTION MEJORADA (especialmente bajas alturas) ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
@@ -78,11 +79,15 @@ local function getGroundInfo(root)
     local onGround = false
     local minDist = GROUND_RAY_DIST + 15
     
-    for _, offset in ipairs({Vector3.new(0,4,0), Vector3.new(2.5,4,0), Vector3.new(-2.5,4,0), Vector3.new(0,2,0)}) do
+    -- Más raycasts para detectar mejor en alturas bajas y bordes
+    for _, offset in ipairs({
+        Vector3.new(0, 5, 0), Vector3.new(2, 5, 0), Vector3.new(-2, 5, 0),
+        Vector3.new(0, 3, 0), Vector3.new(1.5, 3, 0), Vector3.new(-1.5, 3, 0)
+    }) do
         local result = Workspace:Raycast(root.Position + offset, Vector3.new(0, -GROUND_RAY_DIST, 0), rayParams)
         if result then
             local dist = root.Position.Y - result.Position.Y
-            if dist < 6.5 then onGround = true end
+            if dist < 7 then onGround = true end
             if dist < minDist then minDist = dist end
         end
     end
@@ -149,8 +154,7 @@ local function removeWarning(player)
 end
 
 local function checkPlayer(player)
-    -- ==================== FIX PRINCIPAL ====================
-    if player == localPlayer then return end  -- <--- NO TE DETECTA A TI
+    if player == localPlayer then return end   -- No te detecta a ti
     
     local char = player.Character
     if not char then 
@@ -179,13 +183,19 @@ local function checkPlayer(player)
     local lastPos = LAST_POS[player]
     LAST_POS[player] = root.Position
 
-    local inAir = not onGround and dist > 7 and hum.FloorMaterial == Enum.Material.Air
+    local inAir = not onGround and dist > 6 and hum.FloorMaterial == Enum.Material.Air
 
-    if inAir then
+    if inAir or dist > LOW_FLY_THRESHOLD then
         FLY_TIME[player] = FLY_TIME[player] + (tick() - LAST_CHECK[player])
 
+        -- Detección fuerte en alturas bajas
+        if dist > LOW_FLY_THRESHOLD and dist < 15 then
+            table.insert(currentReasons, "Low-Fly (Delta)")
+            cheating = true
+        end
+
         if lastPos and (root.Position - lastPos).Magnitude > TELEPORT_THRESHOLD then
-            table.insert(currentReasons, "CFrame-Fly (Delta)")
+            table.insert(currentReasons, "CFrame-Fly")
             cheating = true
         end
 
@@ -194,7 +204,7 @@ local function checkPlayer(player)
             cheating = true
         end
     else
-        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 2.2)
+        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 2.5)
     end
 
     LAST_CHECK[player] = tick()
@@ -213,7 +223,7 @@ local function checkPlayer(player)
         playerData[player].frames = (playerData[player].frames or 0) + 1
         if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
             createWarning(player, currentReasons)
-            print("🚨 CHEATER DETECTADO: " .. player.Name .. " -> " .. table.concat(currentReasons, " + "))
+            print("🚨 CHEATER DETECTADO (baja altura): " .. player.Name .. " -> " .. table.concat(currentReasons, " + "))
         end
     else
         removeWarning(player)
@@ -292,4 +302,4 @@ if localPlayer.Character then
 end
 
 print("✅ Detector cargado correctamente")
-print("Ahora SOLO detecta a los DEMÁS (no a ti)")
+print("Mejorado para detectar Fly en alturas bajas (Low-Fly)")
