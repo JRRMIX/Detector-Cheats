@@ -10,9 +10,9 @@ local localPlayer = Players.LocalPlayer
 -- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
-local AIR_TIME_THRESHOLD = 2.5          -- más sensible
+local AIR_TIME_THRESHOLD = 3          -- más sensible
 local GROUND_RAY_DIST = 25
-local CHEAT_FRAMES_TO_FLAG = 4         -- <<<<< CAMBIO PRINCIPAL (más rápido)
+local CHEAT_FRAMES_TO_FLAG = 3.6         -- <<<<< CAMBIO PRINCIPAL (más rápido)
 local TELEPORT_THRESHOLD = 24
 local LOW_FLY_THRESHOLD = 9.0
 
