@@ -68,7 +68,7 @@ local CHEAT_FRAMES_TO_FLAG = 3
 local TELEPORT_THRESHOLD = 23
 local LOW_FLY_THRESHOLD = 9.0
 
-local SCAN_INTERVAL = 0.30  -- ← Cada 0.30 segundos escanea a TODOS
+local SCAN_INTERVAL = 0.15  -- ← Cada 0.30 segundos escanea a TODOS
 
 local playerData = {}
 local warnings = {}
