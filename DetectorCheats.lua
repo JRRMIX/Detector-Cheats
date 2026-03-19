@@ -8,36 +8,42 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local localPlayer = Players.LocalPlayer
 
--- ==================== PANTALLA DE CARGA PERSONALIZADA ====================
+-- ==================== PANTALLA DE CARGA PERSONALIZADA (FULL SCREEN) ====================
 local function createLoadingScreen()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "DeltaDetectorLoader"
     screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true          -- ← Esto elimina los márgenes superiores (barra de Roblox)
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.DisplayOrder = 999              -- ← Para que esté por encima de casi todo
     screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 
+    -- Fondo que cubre TODA la pantalla
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.Position = UDim2.new(0, 0, 0, 0)
     bg.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
     bg.BackgroundTransparency = 1
+    bg.BorderSizePixel = 0
     bg.Parent = screenGui
 
     -- DeltaDetector X (Morado)
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(0.8, 0, 0.12, 0)
-    title.Position = UDim2.new(0.1, 0, 0.28, 0)
+    title.Size = UDim2.new(0.9, 0, 0.14, 0)
+    title.Position = UDim2.new(0.05, 0, 0.25, 0)
     title.BackgroundTransparency = 1
     title.Text = "DeltaDetector X"
     title.TextColor3 = Color3.fromRGB(180, 0, 255)  -- Morado
     title.TextScaled = true
     title.Font = Enum.Font.GothamBlack
-    title.TextStrokeTransparency = 0
+    title.TextStrokeTransparency = 0.1
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.Parent = bg
 
     -- [🍀DUELS] Asesinos VS Sheriffs (Blanco)
     local gameName = Instance.new("TextLabel")
-    gameName.Size = UDim2.new(0.85, 0, 0.08, 0)
-    gameName.Position = UDim2.new(0.075, 0, 0.42, 0)
+    gameName.Size = UDim2.new(0.9, 0, 0.09, 0)
+    gameName.Position = UDim2.new(0.05, 0, 0.42, 0)
     gameName.BackgroundTransparency = 1
     gameName.Text = "[🍀DUELS] Asesinos VS Sheriffs"
     gameName.TextColor3 = Color3.new(1, 1, 1)
@@ -48,8 +54,8 @@ local function createLoadingScreen()
 
     -- creada por @Jomix47 (Rojo pequeño)
     local credit = Instance.new("TextLabel")
-    credit.Size = UDim2.new(0.5, 0, 0.05, 0)
-    credit.Position = UDim2.new(0.25, 0, 0.53, 0)
+    credit.Size = UDim2.new(0.6, 0, 0.06, 0)
+    credit.Position = UDim2.new(0.2, 0, 0.54, 0)
     credit.BackgroundTransparency = 1
     credit.Text = "creada por @Jomix47"
     credit.TextColor3 = Color3.fromRGB(255, 40, 40)
@@ -60,8 +66,8 @@ local function createLoadingScreen()
 
     -- Cargando...
     local loading = Instance.new("TextLabel")
-    loading.Size = UDim2.new(0.4, 0, 0.06, 0)
-    loading.Position = UDim2.new(0.3, 0, 0.65, 0)
+    loading.Size = UDim2.new(0.5, 0, 0.07, 0)
+    loading.Position = UDim2.new(0.25, 0, 0.68, 0)
     loading.BackgroundTransparency = 1
     loading.Text = "Cargando..."
     loading.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -83,7 +89,7 @@ local function createLoadingScreen()
     TweenService:Create(credit, TweenInfo.new(1.5), {TextTransparency = 0}):Play()
     TweenService:Create(loading, TweenInfo.new(1.7), {TextTransparency = 0}):Play()
 
-    -- Después de 3.2 segundos: cambia a "Bienvenido" y se desvanece
+    -- Después de 3.2 segundos: cambia a "Bienvenido" y fade out
     task.delay(3.2, function()
         loading.Text = "Bienvenido"
         loading.TextColor3 = Color3.fromRGB(0, 255, 100)
@@ -93,7 +99,7 @@ local function createLoadingScreen()
         task.wait(1.4)
 
         -- Fade out completo
-        TweenService:Create(bg, TweenInfo.new(1.0), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(bg, TweenInfo.new(1.0, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
         TweenService:Create(title, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
         TweenService:Create(gameName, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
         TweenService:Create(credit, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
@@ -121,7 +127,7 @@ local LAST_POS = {}
 local FLY_TIME = {}
 local LAST_SCAN = 0
 
--- ==================== ROLES (sin cambios) ====================
+-- ==================== ROLES ====================
 local Roles = {
     ["SoufiwIsReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
     ["SoufiwIsNotReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
