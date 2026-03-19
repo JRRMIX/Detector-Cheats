@@ -1,11 +1,12 @@
 -- =============================================
--- DeltaDetector X - OPTIMIZADO (Escanea cada 0.30s)
+-- DeltaDetector X - OPTIMIZADO + FPS & Ping HUD
 -- =============================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local Stats = game:GetService("Stats")
 local localPlayer = Players.LocalPlayer
 
 -- ==================== PANTALLA DE CARGA PERSONALIZADA (FULL SCREEN) ====================
@@ -13,12 +14,11 @@ local function createLoadingScreen()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "DeltaDetectorLoader"
     screenGui.ResetOnSpawn = false
-    screenGui.IgnoreGuiInset = true          -- ← Esto elimina los márgenes superiores (barra de Roblox)
+    screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.DisplayOrder = 999              -- ← Para que esté por encima de casi todo
+    screenGui.DisplayOrder = 999
     screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 
-    -- Fondo que cubre TODA la pantalla
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
     bg.Position = UDim2.new(0, 0, 0, 0)
@@ -27,20 +27,18 @@ local function createLoadingScreen()
     bg.BorderSizePixel = 0
     bg.Parent = screenGui
 
-    -- DeltaDetector X (Morado)
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.9, 0, 0.14, 0)
     title.Position = UDim2.new(0.05, 0, 0.25, 0)
     title.BackgroundTransparency = 1
     title.Text = "DeltaDetector X"
-    title.TextColor3 = Color3.fromRGB(180, 0, 255)  -- Morado
+    title.TextColor3 = Color3.fromRGB(180, 0, 255)
     title.TextScaled = true
     title.Font = Enum.Font.GothamBlack
     title.TextStrokeTransparency = 0.1
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.Parent = bg
 
-    -- [🍀DUELS] Asesinos VS Sheriffs (Blanco)
     local gameName = Instance.new("TextLabel")
     gameName.Size = UDim2.new(0.9, 0, 0.09, 0)
     gameName.Position = UDim2.new(0.05, 0, 0.42, 0)
@@ -52,7 +50,6 @@ local function createLoadingScreen()
     gameName.TextStrokeTransparency = 0.6
     gameName.Parent = bg
 
-    -- creada por @Jomix47 (Rojo pequeño)
     local credit = Instance.new("TextLabel")
     credit.Size = UDim2.new(0.6, 0, 0.06, 0)
     credit.Position = UDim2.new(0.2, 0, 0.54, 0)
@@ -64,7 +61,6 @@ local function createLoadingScreen()
     credit.TextStrokeTransparency = 0.7
     credit.Parent = bg
 
-    -- Cargando...
     local loading = Instance.new("TextLabel")
     loading.Size = UDim2.new(0.5, 0, 0.07, 0)
     loading.Position = UDim2.new(0.25, 0, 0.68, 0)
@@ -76,20 +72,12 @@ local function createLoadingScreen()
     loading.TextStrokeTransparency = 0.8
     loading.Parent = bg
 
-    -- Animación de entrada
-    bg.BackgroundTransparency = 0.6
-    title.TextTransparency = 1
-    gameName.TextTransparency = 1
-    credit.TextTransparency = 1
-    loading.TextTransparency = 1
-
     TweenService:Create(bg, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.15}):Play()
     TweenService:Create(title, TweenInfo.new(1.1), {TextTransparency = 0}):Play()
     TweenService:Create(gameName, TweenInfo.new(1.3), {TextTransparency = 0}):Play()
     TweenService:Create(credit, TweenInfo.new(1.5), {TextTransparency = 0}):Play()
     TweenService:Create(loading, TweenInfo.new(1.7), {TextTransparency = 0}):Play()
 
-    -- Después de 3.2 segundos: cambia a "Bienvenido" y fade out
     task.delay(3.2, function()
         loading.Text = "Bienvenido"
         loading.TextColor3 = Color3.fromRGB(0, 255, 100)
@@ -98,7 +86,6 @@ local function createLoadingScreen()
 
         task.wait(1.4)
 
-        -- Fade out completo
         TweenService:Create(bg, TweenInfo.new(1.0, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
         TweenService:Create(title, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
         TweenService:Create(gameName, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
@@ -107,6 +94,77 @@ local function createLoadingScreen()
 
         task.wait(1.1)
         screenGui:Destroy()
+
+        -- Después de que desaparezca la carga → crear el HUD de FPS + Ping
+        createFPSPingHUD()
+    end)
+end
+
+-- ==================== HUD FPS + PING (esquina superior izquierda) ====================
+local function createFPSPingHUD()
+    local hudGui = Instance.new("ScreenGui")
+    hudGui.Name = "FPSPingHUD"
+    hudGui.ResetOnSpawn = false
+    hudGui.IgnoreGuiInset = true
+    hudGui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 110, 0, 45)
+    frame.Position = UDim2.new(0, 10, 0, 10)
+    frame.BackgroundTransparency = 0.65
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    frame.BorderSizePixel = 0
+    frame.Parent = hudGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Transparency = 0.6
+    stroke.Color = Color3.fromRGB(100, 100, 255)
+    stroke.Thickness = 1
+    stroke.Parent = frame
+
+    local fpsLabel = Instance.new("TextLabel")
+    fpsLabel.Size = UDim2.new(1, -10, 0.5, 0)
+    fpsLabel.Position = UDim2.new(0, 5, 0, 3)
+    fpsLabel.BackgroundTransparency = 1
+    fpsLabel.Text = "FPS: 0"
+    fpsLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
+    fpsLabel.TextScaled = true
+    fpsLabel.Font = Enum.Font.GothamSemibold
+    fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    fpsLabel.Parent = frame
+
+    local pingLabel = Instance.new("TextLabel")
+    pingLabel.Size = UDim2.new(1, -10, 0.5, 0)
+    pingLabel.Position = UDim2.new(0, 5, 0.5, -3)
+    pingLabel.BackgroundTransparency = 1
+    pingLabel.Text = "Ping: 0 ms"
+    pingLabel.TextColor3 = Color3.fromRGB(180, 255, 180)
+    pingLabel.TextScaled = true
+    pingLabel.Font = Enum.Font.GothamSemibold
+    pingLabel.TextXAlignment = Enum.TextXAlignment.Left
+    pingLabel.Parent = frame
+
+    -- Actualización en tiempo real
+    local lastTime = tick()
+    local frameCount = 0
+
+    RunService.RenderStepped:Connect(function()
+        frameCount += 1
+        local currentTime = tick()
+
+        if currentTime - lastTime >= 1 then
+            local fps = math.floor(frameCount / (currentTime - lastTime))
+            fpsLabel.Text = "FPS: " .. fps
+            frameCount = 0
+            lastTime = currentTime
+        end
+
+        local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+        pingLabel.Text = "Ping: " .. math.floor(ping) .. " ms"
     end)
 end
 
@@ -159,7 +217,7 @@ local Roles = {
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== DETECCIÓN (Optimizada) ====================
+-- ==================== DETECCIÓN (sin cambios) ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
