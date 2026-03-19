@@ -9,7 +9,7 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local localPlayer = Players.LocalPlayer
 
--- ==================== PANTALLA DE CARGA ====================
+-- ==================== PANTALLA DE CARGA PERSONALIZADA ====================
 local function createLoadingScreen()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "DeltaDetectorLoader"
@@ -18,48 +18,95 @@ local function createLoadingScreen()
 
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+    bg.BackgroundColor3 = Color3.fromRGB(8, 8, 15)
     bg.BackgroundTransparency = 1
     bg.Parent = screenGui
 
+    -- DeltaDetector X (Morado)
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(0.6, 0, 0.15, 0)
-    title.Position = UDim2.new(0.2, 0, 0.35, 0)
+    title.Size = UDim2.new(0.8, 0, 0.12, 0)
+    title.Position = UDim2.new(0.1, 0, 0.28, 0)
     title.BackgroundTransparency = 1
-    title.Text = "DETECTOR DE DELTA"
-    title.TextColor3 = Color3.fromRGB(255, 50, 50)
+    title.Text = "DeltaDetector X"
+    title.TextColor3 = Color3.fromRGB(180, 0, 255)  -- Morado
     title.TextScaled = true
     title.Font = Enum.Font.GothamBlack
-    title.TextStrokeTransparency = 0
+    title.TextStrokeTransparency = 0.3
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.Parent = bg
 
+    -- [🍀DUELS] Asesinos VS Sheriffs (Morado)
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(0.85, 0, 0.08, 0)
+    subtitle.Position = UDim2.new(0.075, 0, 0.42, 0)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "[🍀DUELS] Asesinos VS Sheriffs"
+    subtitle.TextColor3 = Color3.fromRGB(180, 0, 255)  -- Morado
+    subtitle.TextScaled = true
+    subtitle.Font = Enum.Font.GothamBold
+    subtitle.TextStrokeTransparency = 0.4
+    subtitle.Parent = bg
+
+    -- creada por @Jomix47 (Rojo pequeño)
     local credit = Instance.new("TextLabel")
-    credit.Size = UDim2.new(0.4, 0, 0.05, 0)
-    credit.Position = UDim2.new(0.3, 0, 0.55, 0)
+    credit.Size = UDim2.new(0.5, 0, 0.05, 0)
+    credit.Position = UDim2.new(0.25, 0, 0.55, 0)
     credit.BackgroundTransparency = 1
-    credit.Text = "creado por jomix"
-    credit.TextColor3 = Color3.fromRGB(180, 180, 180)
+    credit.Text = "creada por @Jomix47"
+    credit.TextColor3 = Color3.fromRGB(255, 40, 40)  -- Rojo
     credit.TextScaled = true
     credit.Font = Enum.Font.Gotham
-    credit.TextStrokeTransparency = 0.7
+    credit.TextStrokeTransparency = 0.6
     credit.Parent = bg
 
-    -- Animación
-    TweenService:Create(bg, TweenInfo.new(1.2), {BackgroundTransparency = 0.2}):Play()
-    TweenService:Create(title, TweenInfo.new(1.4), {TextTransparency = 0}):Play()
-    TweenService:Create(credit, TweenInfo.new(1.6), {TextTransparency = 0}):Play()
+    -- Cargando...
+    local loading = Instance.new("TextLabel")
+    loading.Size = UDim2.new(0.4, 0, 0.06, 0)
+    loading.Position = UDim2.new(0.3, 0, 0.68, 0)
+    loading.BackgroundTransparency = 1
+    loading.Text = "Cargando..."
+    loading.TextColor3 = Color3.fromRGB(200, 200, 200)
+    loading.TextScaled = true
+    loading.Font = Enum.Font.Gotham
+    loading.TextStrokeTransparency = 0.7
+    loading.Parent = bg
 
-    task.delay(2.8, function()
-        TweenService:Create(bg, TweenInfo.new(0.8), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(title, TweenInfo.new(0.8), {TextTransparency = 1}):Play()
-        TweenService:Create(credit, TweenInfo.new(0.8), {TextTransparency = 1}):Play()
-        task.wait(0.9)
-        screenGui:Destroy()
-    end)
+    -- Animación de entrada
+    bg.BackgroundTransparency = 0.6
+    title.TextTransparency = 1
+    subtitle.TextTransparency = 1
+    credit.TextTransparency = 1
+    loading.TextTransparency = 1
+
+    TweenService:Create(bg, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.25}):Play()
+    TweenService:Create(title, TweenInfo.new(1.1, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
+    TweenService:Create(subtitle, TweenInfo.new(1.3, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
+    TweenService:Create(credit, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
+    TweenService:Create(loading, TweenInfo.new(1.7, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
+
+    -- Espera y transición a "Bienvenido"
+    task.wait(3.2)
+
+    loading.Text = "Bienvenido"
+    loading.TextColor3 = Color3.fromRGB(0, 255, 100)
+    loading.TextStrokeTransparency = 0.5
+
+    TweenService:Create(loading, TweenInfo.new(0.6), {TextTransparency = 0}):Play()
+
+    task.wait(1.8)
+
+    -- Fade out completo
+    TweenService:Create(bg, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(title, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
+    TweenService:Create(subtitle, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
+    TweenService:Create(credit, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
+    TweenService:Create(loading, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
+
+    task.wait(1.3)
+    screenGui:Destroy()
 end
 
--- ==================== CONFIG ====================
+-- ==================== CONFIG CHEATS ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
 local AIR_TIME_THRESHOLD = 3.3
@@ -68,7 +115,7 @@ local CHEAT_FRAMES_TO_FLAG = 3
 local TELEPORT_THRESHOLD = 23
 local LOW_FLY_THRESHOLD = 9.0
 
-local SCAN_INTERVAL = 0.15  -- ← Cada 0.30 segundos escanea a TODOS
+local SCAN_INTERVAL = 0.30
 
 local playerData = {}
 local warnings = {}
@@ -76,7 +123,7 @@ local LAST_POS = {}
 local FLY_TIME = {}
 local LAST_SCAN = 0
 
--- ==================== ROLES ====================
+-- ==================== ROLES (sin cambios) ====================
 local Roles = {
     ["SoufiwIsReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
     ["SoufiwIsNotReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
@@ -108,7 +155,7 @@ local Roles = {
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== DETECCIÓN ====================
+-- ==================== DETECCIÓN (sin cambios importantes) ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
@@ -321,7 +368,6 @@ end
 -- ==================== INICIO ====================
 createLoadingScreen()
 
--- Escanea cada 0.30 segundos
 RunService.Heartbeat:Connect(scanAllPlayers)
 
 Players.PlayerAdded:Connect(onPlayerAdded)
@@ -342,4 +388,3 @@ if localPlayer.Character then
 end
 
 print("✅ Detector de Delta cargado correctamente")
-print("Escanea a todos los jugadores cada 0.30 segundos | Creado por Jomix")
