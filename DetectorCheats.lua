@@ -1,6 +1,5 @@
 -- =============================================
--- Detector Cheats 2026 - OPTIMIZADO (Escanea cada 0.30s)
--- Fly + Speed + BodyMovers + Roles arriba
+-- DeltaDetector X - OPTIMIZADO (Escanea cada 0.30s)
 -- =============================================
 
 local Players = game:GetService("Players")
@@ -18,7 +17,7 @@ local function createLoadingScreen()
 
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(8, 8, 15)
+    bg.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
     bg.BackgroundTransparency = 1
     bg.Parent = screenGui
 
@@ -31,79 +30,78 @@ local function createLoadingScreen()
     title.TextColor3 = Color3.fromRGB(180, 0, 255)  -- Morado
     title.TextScaled = true
     title.Font = Enum.Font.GothamBlack
-    title.TextStrokeTransparency = 0.3
+    title.TextStrokeTransparency = 0
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.Parent = bg
 
-    -- [🍀DUELS] Asesinos VS Sheriffs (Morado)
-    local subtitle = Instance.new("TextLabel")
-    subtitle.Size = UDim2.new(0.85, 0, 0.08, 0)
-    subtitle.Position = UDim2.new(0.075, 0, 0.42, 0)
-    subtitle.BackgroundTransparency = 1
-    subtitle.Text = "[🍀DUELS] Asesinos VS Sheriffs"
-    subtitle.TextColor3 = Color3.fromRGB(180, 0, 255)  -- Morado
-    subtitle.TextScaled = true
-    subtitle.Font = Enum.Font.GothamBold
-    subtitle.TextStrokeTransparency = 0.4
-    subtitle.Parent = bg
+    -- [🍀DUELS] Asesinos VS Sheriffs (Blanco)
+    local gameName = Instance.new("TextLabel")
+    gameName.Size = UDim2.new(0.85, 0, 0.08, 0)
+    gameName.Position = UDim2.new(0.075, 0, 0.42, 0)
+    gameName.BackgroundTransparency = 1
+    gameName.Text = "[🍀DUELS] Asesinos VS Sheriffs"
+    gameName.TextColor3 = Color3.new(1, 1, 1)
+    gameName.TextScaled = true
+    gameName.Font = Enum.Font.GothamBold
+    gameName.TextStrokeTransparency = 0.6
+    gameName.Parent = bg
 
     -- creada por @Jomix47 (Rojo pequeño)
     local credit = Instance.new("TextLabel")
     credit.Size = UDim2.new(0.5, 0, 0.05, 0)
-    credit.Position = UDim2.new(0.25, 0, 0.55, 0)
+    credit.Position = UDim2.new(0.25, 0, 0.53, 0)
     credit.BackgroundTransparency = 1
     credit.Text = "creada por @Jomix47"
-    credit.TextColor3 = Color3.fromRGB(255, 40, 40)  -- Rojo
+    credit.TextColor3 = Color3.fromRGB(255, 40, 40)
     credit.TextScaled = true
     credit.Font = Enum.Font.Gotham
-    credit.TextStrokeTransparency = 0.6
+    credit.TextStrokeTransparency = 0.7
     credit.Parent = bg
 
     -- Cargando...
     local loading = Instance.new("TextLabel")
     loading.Size = UDim2.new(0.4, 0, 0.06, 0)
-    loading.Position = UDim2.new(0.3, 0, 0.68, 0)
+    loading.Position = UDim2.new(0.3, 0, 0.65, 0)
     loading.BackgroundTransparency = 1
     loading.Text = "Cargando..."
     loading.TextColor3 = Color3.fromRGB(200, 200, 200)
     loading.TextScaled = true
     loading.Font = Enum.Font.Gotham
-    loading.TextStrokeTransparency = 0.7
+    loading.TextStrokeTransparency = 0.8
     loading.Parent = bg
 
     -- Animación de entrada
     bg.BackgroundTransparency = 0.6
     title.TextTransparency = 1
-    subtitle.TextTransparency = 1
+    gameName.TextTransparency = 1
     credit.TextTransparency = 1
     loading.TextTransparency = 1
 
-    TweenService:Create(bg, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.25}):Play()
-    TweenService:Create(title, TweenInfo.new(1.1, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
-    TweenService:Create(subtitle, TweenInfo.new(1.3, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
-    TweenService:Create(credit, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
-    TweenService:Create(loading, TweenInfo.new(1.7, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
+    TweenService:Create(bg, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.15}):Play()
+    TweenService:Create(title, TweenInfo.new(1.1), {TextTransparency = 0}):Play()
+    TweenService:Create(gameName, TweenInfo.new(1.3), {TextTransparency = 0}):Play()
+    TweenService:Create(credit, TweenInfo.new(1.5), {TextTransparency = 0}):Play()
+    TweenService:Create(loading, TweenInfo.new(1.7), {TextTransparency = 0}):Play()
 
-    -- Espera y transición a "Bienvenido"
-    task.wait(3.2)
+    -- Después de 3.2 segundos: cambia a "Bienvenido" y se desvanece
+    task.delay(3.2, function()
+        loading.Text = "Bienvenido"
+        loading.TextColor3 = Color3.fromRGB(0, 255, 100)
 
-    loading.Text = "Bienvenido"
-    loading.TextColor3 = Color3.fromRGB(0, 255, 100)
-    loading.TextStrokeTransparency = 0.5
+        TweenService:Create(loading, TweenInfo.new(0.6), {TextTransparency = 0}):Play()
 
-    TweenService:Create(loading, TweenInfo.new(0.6), {TextTransparency = 0}):Play()
+        task.wait(1.4)
 
-    task.wait(1.8)
+        -- Fade out completo
+        TweenService:Create(bg, TweenInfo.new(1.0), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(title, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
+        TweenService:Create(gameName, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
+        TweenService:Create(credit, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
+        TweenService:Create(loading, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
 
-    -- Fade out completo
-    TweenService:Create(bg, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(title, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
-    TweenService:Create(subtitle, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
-    TweenService:Create(credit, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
-    TweenService:Create(loading, TweenInfo.new(1.2), {TextTransparency = 1}):Play()
-
-    task.wait(1.3)
-    screenGui:Destroy()
+        task.wait(1.1)
+        screenGui:Destroy()
+    end)
 end
 
 -- ==================== CONFIG CHEATS ====================
@@ -155,7 +153,7 @@ local Roles = {
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== DETECCIÓN (sin cambios importantes) ====================
+-- ==================== DETECCIÓN (Optimizada) ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
@@ -312,7 +310,6 @@ local function scanAllPlayers()
             playerData[player].frames = (playerData[player].frames or 0) + 1
             if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
                 createWarning(player, currentReasons)
-                print("🚨 CHEATER: " .. player.Name .. " → " .. table.concat(currentReasons, " + "))
             end
         else
             removeWarning(player)
@@ -387,4 +384,4 @@ if localPlayer.Character then
     onCharacterAdded(localPlayer.Character, localPlayer)
 end
 
-print("✅ Detector de Delta cargado correctamente")
+print("✅ DeltaDetector X cargado correctamente")
