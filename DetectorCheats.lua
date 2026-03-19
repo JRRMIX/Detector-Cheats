@@ -1,30 +1,82 @@
 -- =============================================
--- Detector Cheats 2026 - SOLO NOMBRE DE ROL ARRIBA
--- Fly + Speed + BodyMovers + Roles visibles arriba del jugador
+-- Detector Cheats 2026 - OPTIMIZADO (Escanea cada 0.30s)
+-- Fly + Speed + BodyMovers + Roles arriba
 -- =============================================
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 local localPlayer = Players.LocalPlayer
 
--- ==================== CONFIG CHEATS ====================
+-- ==================== PANTALLA DE CARGA ====================
+local function createLoadingScreen()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "DeltaDetectorLoader"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+    bg.BackgroundTransparency = 1
+    bg.Parent = screenGui
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(0.6, 0, 0.15, 0)
+    title.Position = UDim2.new(0.2, 0, 0.35, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "DETECTOR DE DELTA"
+    title.TextColor3 = Color3.fromRGB(255, 50, 50)
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBlack
+    title.TextStrokeTransparency = 0
+    title.TextStrokeColor3 = Color3.new(0, 0, 0)
+    title.Parent = bg
+
+    local credit = Instance.new("TextLabel")
+    credit.Size = UDim2.new(0.4, 0, 0.05, 0)
+    credit.Position = UDim2.new(0.3, 0, 0.55, 0)
+    credit.BackgroundTransparency = 1
+    credit.Text = "creado por jomix"
+    credit.TextColor3 = Color3.fromRGB(180, 180, 180)
+    credit.TextScaled = true
+    credit.Font = Enum.Font.Gotham
+    credit.TextStrokeTransparency = 0.7
+    credit.Parent = bg
+
+    -- Animación
+    TweenService:Create(bg, TweenInfo.new(1.2), {BackgroundTransparency = 0.2}):Play()
+    TweenService:Create(title, TweenInfo.new(1.4), {TextTransparency = 0}):Play()
+    TweenService:Create(credit, TweenInfo.new(1.6), {TextTransparency = 0}):Play()
+
+    task.delay(2.8, function()
+        TweenService:Create(bg, TweenInfo.new(0.8), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(title, TweenInfo.new(0.8), {TextTransparency = 1}):Play()
+        TweenService:Create(credit, TweenInfo.new(0.8), {TextTransparency = 1}):Play()
+        task.wait(0.9)
+        screenGui:Destroy()
+    end)
+end
+
+-- ==================== CONFIG ====================
 local MAX_HORIZ_SPEED = 95
 local MAX_VERT_SPEED = 48
-local AIR_TIME_THRESHOLD = 5.5         -- subido para evitar falsos positivos en saltos
-local GROUND_RAY_DIST = 25
+local AIR_TIME_THRESHOLD = 3.3
+local GROUND_RAY_DIST = 22
 local CHEAT_FRAMES_TO_FLAG = 3
-local TELEPORT_THRESHOLD = 24
-local LOW_FLY_THRESHOLD = 10.0
-local MAX_NORMAL_JUMP_TIME = 4        -- tiempo máximo razonable para un salto normal
+local TELEPORT_THRESHOLD = 23
+local LOW_FLY_THRESHOLD = 9.0
+
+local SCAN_INTERVAL = 0.30  -- ← Cada 0.30 segundos escanea a TODOS
 
 local playerData = {}
 local warnings = {}
-
 local LAST_POS = {}
 local FLY_TIME = {}
-local LAST_CHECK = {}
+local LAST_SCAN = 0
 
--- ==================== ROLES (SIN CAMBIOS) ====================
+-- ==================== ROLES ====================
 local Roles = {
     ["SoufiwIsReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
     ["SoufiwIsNotReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
@@ -56,13 +108,13 @@ local Roles = {
     ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== CHEAT DETECTION ====================
+-- ==================== DETECCIÓN ====================
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
            obj:IsA("LinearVelocity") or obj:IsA("BodyGyro") or obj:IsA("VectorForce") then
-            local name = obj.Name:lower()
-            if not (name:find("anim") or name:find("game") or name:find("default") or name:find("ragdoll")) then
+            local n = obj.Name:lower()
+            if not (n:find("anim") or n:find("game") or n:find("default") or n:find("ragdoll")) then
                 return true
             end
         end
@@ -75,19 +127,13 @@ local function getGroundInfo(root)
     rayParams.FilterDescendantsInstances = {root.Parent}
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
     rayParams.IgnoreWater = true
-    
-    local onGround = false
-    local minDist = GROUND_RAY_DIST + 15
-    
-    for _, offset in ipairs({Vector3.new(0,5,0), Vector3.new(2.2,5,0), Vector3.new(-2.2,5,0), Vector3.new(0,3,0)}) do
-        local result = Workspace:Raycast(root.Position + offset, Vector3.new(0, -GROUND_RAY_DIST, 0), rayParams)
-        if result then
-            local dist = root.Position.Y - result.Position.Y
-            if dist < 7 then onGround = true end
-            if dist < minDist then minDist = dist end
-        end
+
+    local result = Workspace:Raycast(root.Position + Vector3.new(0, 5, 0), Vector3.new(0, -GROUND_RAY_DIST, 0), rayParams)
+    if result then
+        local dist = root.Position.Y - result.Position.Y
+        return dist < 7, dist
     end
-    return onGround, minDist
+    return false, GROUND_RAY_DIST + 10
 end
 
 local function createWarning(player, reasons)
@@ -95,12 +141,12 @@ local function createWarning(player, reasons)
     if not char then return end
     local adornee = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
     if not adornee then return end
-  
+
     if warnings[player] then
         warnings[player].sub.Text = "(" .. table.concat(reasons, " + ") .. ")"
         return
     end
-  
+
     local hl = Instance.new("Highlight")
     hl.Adornee = char
     hl.Parent = char
@@ -109,14 +155,14 @@ local function createWarning(player, reasons)
     hl.OutlineColor = Color3.fromRGB(255, 0, 0)
     hl.OutlineTransparency = 0
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-  
+
     local bb = Instance.new("BillboardGui")
     bb.Adornee = adornee
     bb.Parent = adornee
     bb.Size = UDim2.new(0, 200, 0, 70)
     bb.StudsOffset = Vector3.new(0, 4.5, 0)
     bb.AlwaysOnTop = true
-  
+
     local main = Instance.new("TextLabel")
     main.Parent = bb
     main.Size = UDim2.new(1,0,0.55,0)
@@ -126,7 +172,7 @@ local function createWarning(player, reasons)
     main.TextScaled = true
     main.Font = Enum.Font.GothamBlack
     main.TextStrokeTransparency = 0
-  
+
     local sub = Instance.new("TextLabel")
     sub.Parent = bb
     sub.Size = UDim2.new(1,0,0.45,0)
@@ -137,7 +183,7 @@ local function createWarning(player, reasons)
     sub.TextScaled = true
     sub.Font = Enum.Font.Gotham
     sub.TextStrokeTransparency = 0.5
-  
+
     warnings[player] = {hl = hl, bb = bb, sub = sub}
 end
 
@@ -149,89 +195,86 @@ local function removeWarning(player)
     end
 end
 
-local function checkPlayer(player)
-    if player == localPlayer then return end
-    
-    local char = player.Character
-    if not char then 
-        removeWarning(player) 
-        playerData[player] = nil 
-        LAST_POS[player] = nil
-        FLY_TIME[player] = nil
-        return 
-    end
-  
-    local root = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChild("Humanoid")
-    if not root or not hum or hum.Health <= 0 then return end
-  
-    if not playerData[player] then playerData[player] = {frames = 0} end
-    if not FLY_TIME[player] then FLY_TIME[player] = 0 end
-    if not LAST_CHECK[player] then LAST_CHECK[player] = tick() end
+local function scanAllPlayers()
+    local now = tick()
+    if now - LAST_SCAN < SCAN_INTERVAL then return end
+    LAST_SCAN = now
 
-    local currentReasons = {}
-    local cheating = false
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == localPlayer then continue end
 
-    local onGround, dist = getGroundInfo(root)
-    local vertVel = math.abs(root.Velocity.Y)
-    local horiz = (root.Velocity * Vector3.new(1,0,1)).Magnitude
+        local char = player.Character
+        if not char then 
+            removeWarning(player)
+            playerData[player] = nil
+            continue 
+        end
 
-    local lastPos = LAST_POS[player]
-    LAST_POS[player] = root.Position
+        local root = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChild("Humanoid")
+        if not root or not hum or hum.Health <= 0 then continue end
 
-    local inAir = not onGround and dist > 6 and hum.FloorMaterial == Enum.Material.Air
+        if not playerData[player] then playerData[player] = {frames = 0} end
+        if not FLY_TIME[player] then FLY_TIME[player] = 0 end
+        if not LAST_POS[player] then LAST_POS[player] = root.Position end
 
-    if inAir or dist > LOW_FLY_THRESHOLD then
-        FLY_TIME[player] = FLY_TIME[player] + (tick() - LAST_CHECK[player])
+        local currentReasons = {}
+        local cheating = false
 
-        -- Detección de Low Fly
-        if dist > LOW_FLY_THRESHOLD and dist < 18 then
-            table.insert(currentReasons, "Low-Fly")
+        local onGround, dist = getGroundInfo(root)
+        local vertVel = math.abs(root.Velocity.Y)
+        local horiz = (root.Velocity * Vector3.new(1,0,1)).Magnitude
+
+        local lastPos = LAST_POS[player]
+        LAST_POS[player] = root.Position
+
+        local inAir = not onGround and dist > 6
+
+        if inAir or dist > LOW_FLY_THRESHOLD then
+            FLY_TIME[player] = FLY_TIME[player] + SCAN_INTERVAL
+
+            if dist > LOW_FLY_THRESHOLD and dist < 18 then
+                table.insert(currentReasons, "Low-Fly")
+                cheating = true
+            end
+
+            if lastPos and (root.Position - lastPos).Magnitude > TELEPORT_THRESHOLD then
+                table.insert(currentReasons, "CFrame-Fly")
+                cheating = true
+            end
+
+            if FLY_TIME[player] > AIR_TIME_THRESHOLD or vertVel > MAX_VERT_SPEED then
+                table.insert(currentReasons, "Fly")
+                cheating = true
+            end
+        else
+            FLY_TIME[player] = math.max(0, FLY_TIME[player] - 4)
+        end
+
+        if hasUnauthorizedBodyMover(char) then
+            table.insert(currentReasons, "BodyMover")
             cheating = true
         end
 
-        -- Detección de CFrame Fly
-        if lastPos and (root.Position - lastPos).Magnitude > TELEPORT_THRESHOLD then
-            table.insert(currentReasons, "CFrame-Fly")
+        if horiz > MAX_HORIZ_SPEED and hum.MoveDirection.Magnitude > 0.05 then
+            table.insert(currentReasons, "Speed")
             cheating = true
         end
 
-        -- Solo marca Fly si lleva más tiempo del normal en el aire
-        if FLY_TIME[player] > AIR_TIME_THRESHOLD or vertVel > MAX_VERT_SPEED then
-            table.insert(currentReasons, "Fly")
-            cheating = true
+        if cheating and #currentReasons > 0 then
+            playerData[player].frames = (playerData[player].frames or 0) + 1
+            if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
+                createWarning(player, currentReasons)
+                print("🚨 CHEATER: " .. player.Name .. " → " .. table.concat(currentReasons, " + "))
+            end
+        else
+            removeWarning(player)
+            playerData[player].frames = 0
         end
-    else
-        -- Resetea más rápido cuando toca el suelo (evita falsos positivos en saltos)
-        FLY_TIME[player] = math.max(0, FLY_TIME[player] - 3.5)
-    end
-
-    LAST_CHECK[player] = tick()
-
-    if hasUnauthorizedBodyMover(char) then
-        table.insert(currentReasons, "BodyMover")
-        cheating = true
-    end
-
-    if horiz > MAX_HORIZ_SPEED and hum.MoveDirection.Magnitude > 0.05 then
-        table.insert(currentReasons, "Speed")
-        cheating = true
-    end
-
-    if cheating and #currentReasons > 0 then
-        playerData[player].frames = (playerData[player].frames or 0) + 1
-        
-        if playerData[player].frames >= CHEAT_FRAMES_TO_FLAG then
-            createWarning(player, currentReasons)
-            print("🚨 CHEATER DETECTADO: " .. player.Name .. " -> " .. table.concat(currentReasons, " + "))
-        end
-    else
-        removeWarning(player)
-        playerData[player].frames = 0
     end
 end
 
--- ==================== ROLES (SIN CAMBIOS) ====================
+-- ==================== ROLES ====================
 local function createRoleLabel(character, roleInfo)
     if not character then return end
     local head = character:FindFirstChild("Head")
@@ -247,6 +290,7 @@ local function createRoleLabel(character, roleInfo)
     billboard.AlwaysOnTop = true
     billboard.LightInfluence = 0
     billboard.Parent = head
+
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1, 0, 1, 0)
     text.BackgroundTransparency = 1
@@ -271,17 +315,14 @@ local function onPlayerAdded(player)
     player.CharacterAdded:Connect(function(char)
         onCharacterAdded(char, player)
     end)
-    if player.Character then
-        onCharacterAdded(player.Character, player)
-    end
+    if player.Character then onCharacterAdded(player.Character, player) end
 end
 
 -- ==================== INICIO ====================
-RunService.Heartbeat:Connect(function()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        pcall(checkPlayer, plr)
-    end
-end)
+createLoadingScreen()
+
+-- Escanea cada 0.30 segundos
+RunService.Heartbeat:Connect(scanAllPlayers)
 
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(function(plr)
@@ -289,7 +330,6 @@ Players.PlayerRemoving:Connect(function(plr)
     playerData[plr] = nil
     LAST_POS[plr] = nil
     FLY_TIME[plr] = nil
-    LAST_CHECK[plr] = nil
 end)
 
 for _, plr in ipairs(Players:GetPlayers()) do
@@ -301,5 +341,5 @@ if localPlayer.Character then
     onCharacterAdded(localPlayer.Character, localPlayer)
 end
 
-print("✅ Detector cargado correctamente")
-print("Ahora NO detecta saltos normales (solo fly real)")
+print("✅ Detector de Delta cargado correctamente")
+print("Escanea a todos los jugadores cada 0.30 segundos | Creado por Jomix")
