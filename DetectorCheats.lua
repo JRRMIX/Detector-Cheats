@@ -1,11 +1,14 @@
 -- =============================================
--- DeltaDetector X - OPTIMIZADO (Escanea cada 0.30s)
+-- DeltaDetector X - OPTIMIZADO + ANTI-LAG + FPS COUNTER (2026)
 -- =============================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+local UserSettings = UserSettings()
 local localPlayer = Players.LocalPlayer
 
 -- ==================== PANTALLA DE CARGA PERSONALIZADA (FULL SCREEN) ====================
@@ -13,12 +16,11 @@ local function createLoadingScreen()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "DeltaDetectorLoader"
     screenGui.ResetOnSpawn = false
-    screenGui.IgnoreGuiInset = true          -- ← Esto elimina los márgenes superiores (barra de Roblox)
+    screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.DisplayOrder = 999              -- ← Para que esté por encima de casi todo
+    screenGui.DisplayOrder = 999
     screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 
-    -- Fondo que cubre TODA la pantalla
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
     bg.Position = UDim2.new(0, 0, 0, 0)
@@ -27,20 +29,18 @@ local function createLoadingScreen()
     bg.BorderSizePixel = 0
     bg.Parent = screenGui
 
-    -- DeltaDetector X (Morado)
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.9, 0, 0.14, 0)
     title.Position = UDim2.new(0.05, 0, 0.25, 0)
     title.BackgroundTransparency = 1
     title.Text = "DeltaDetector X"
-    title.TextColor3 = Color3.fromRGB(180, 0, 255)  -- Morado
+    title.TextColor3 = Color3.fromRGB(180, 0, 255)
     title.TextScaled = true
     title.Font = Enum.Font.GothamBlack
     title.TextStrokeTransparency = 0.1
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.Parent = bg
 
-    -- [🍀DUELS] Asesinos VS Sheriffs (Blanco)
     local gameName = Instance.new("TextLabel")
     gameName.Size = UDim2.new(0.9, 0, 0.09, 0)
     gameName.Position = UDim2.new(0.05, 0, 0.42, 0)
@@ -52,7 +52,6 @@ local function createLoadingScreen()
     gameName.TextStrokeTransparency = 0.6
     gameName.Parent = bg
 
-    -- creada por @Jomix47 (Rojo pequeño)
     local credit = Instance.new("TextLabel")
     credit.Size = UDim2.new(0.6, 0, 0.06, 0)
     credit.Position = UDim2.new(0.2, 0, 0.54, 0)
@@ -64,7 +63,6 @@ local function createLoadingScreen()
     credit.TextStrokeTransparency = 0.7
     credit.Parent = bg
 
-    -- Cargando...
     local loading = Instance.new("TextLabel")
     loading.Size = UDim2.new(0.5, 0, 0.07, 0)
     loading.Position = UDim2.new(0.25, 0, 0.68, 0)
@@ -76,7 +74,6 @@ local function createLoadingScreen()
     loading.TextStrokeTransparency = 0.8
     loading.Parent = bg
 
-    -- Animación de entrada
     bg.BackgroundTransparency = 0.6
     title.TextTransparency = 1
     gameName.TextTransparency = 1
@@ -89,24 +86,123 @@ local function createLoadingScreen()
     TweenService:Create(credit, TweenInfo.new(1.5), {TextTransparency = 0}):Play()
     TweenService:Create(loading, TweenInfo.new(1.7), {TextTransparency = 0}):Play()
 
-    -- Después de 3.2 segundos: cambia a "Bienvenido" y fade out
     task.delay(3.2, function()
         loading.Text = "Bienvenido"
         loading.TextColor3 = Color3.fromRGB(0, 255, 100)
-
         TweenService:Create(loading, TweenInfo.new(0.6), {TextTransparency = 0}):Play()
-
         task.wait(1.4)
-
-        -- Fade out completo
         TweenService:Create(bg, TweenInfo.new(1.0, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
         TweenService:Create(title, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
         TweenService:Create(gameName, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
         TweenService:Create(credit, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
         TweenService:Create(loading, TweenInfo.new(1.0), {TextTransparency = 1}):Play()
-
         task.wait(1.1)
         screenGui:Destroy()
+    end)
+end
+
+-- ==================== ANTI-LAG + LOW GRAPHICS MODE ====================
+local function applyLowGraphicsMode()
+    -- Forzar calidad baja (no siempre funciona al 100%, pero ayuda)
+    pcall(function()
+        UserSettings().GameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel2 -- o QualityLevel1 para más bajo
+    end)
+
+    -- Ajustes globales de Lighting (muy efectivo en low-end)
+    Lighting.GlobalShadows = false
+    Lighting.Brightness = 1
+    Lighting.EnvironmentDiffuseScale = 0
+    Lighting.EnvironmentSpecularScale = 0
+    Lighting.ShadowSoftness = 0
+    if Lighting:FindFirstChild("Bloom") then Lighting.Bloom.Enabled = false end
+    if Lighting:FindFirstChild("SunRays") then Lighting.SunRays.Enabled = false end
+    if Lighting:FindFirstChild("ColorCorrection") then Lighting.ColorCorrection.Enabled = false end
+    if Lighting:FindFirstChild("DepthOfField") then Lighting.DepthOfField.Enabled = false end
+    if Lighting:FindFirstChild("Blur") then Lighting.Blur.Enabled = false end
+
+    -- Quitar partículas y efectos pesados en el workspace
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Sparkles") then
+            obj.Enabled = false
+        end
+    end
+
+    -- Texturas bajas + sin caras
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character then
+            for _, part in ipairs(player.Character:GetDescendants()) do
+                if part:IsA("Decal") and part.Name == "face" then
+                    part.Transparency = 1
+                    part.Visible = false
+                elseif part:IsA("BasePart") or part:IsA("MeshPart") then
+                    part.Material = Enum.Material.Plastic
+                    part.Reflectance = 0
+                    part.CastShadow = false
+                end
+            end
+        end
+    end
+
+    -- Listener para nuevos personajes (sin cara + low material)
+    Players.PlayerAdded:Connect(function(plr)
+        if plr == localPlayer then return end
+        plr.CharacterAdded:Connect(function(char)
+            task.wait(0.5)
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("Decal") and part.Name == "face" then
+                    part.Transparency = 1
+                    part.Visible = false
+                elseif part:IsA("BasePart") or part:IsA("MeshPart") then
+                    part.Material = Enum.Material.Plastic
+                    part.Reflectance = 0
+                    part.CastShadow = false
+                end
+            end
+        end)
+    end)
+end
+
+-- ==================== FPS COUNTER (esquina superior derecha) ====================
+local function createFPSCounter()
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "FPSCounterGui"
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 80, 0, 30)
+    label.Position = UDim2.new(1, -90, 0, 10)
+    label.BackgroundTransparency = 0.6
+    label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    label.TextColor3 = Color3.fromRGB(220, 255, 180)
+    label.TextStrokeTransparency = 0.6
+    label.TextStrokeColor3 = Color3.new(0,0,0)
+    label.Font = Enum.Font.GothamSemibold
+    label.TextSize = 16
+    label.Text = "FPS: --"
+    label.Parent = gui
+
+    local lastTime = tick()
+    local frameCount = 0
+
+    RunService.RenderStepped:Connect(function(dt)
+        frameCount += 1
+        if tick() - lastTime >= 1 then
+            local fps = math.floor(frameCount / (tick() - lastTime))
+            label.Text = "FPS: " .. tostring(fps)
+            frameCount = 0
+            lastTime = tick()
+
+            -- Color según rendimiento
+            if fps >= 55 then
+                label.TextColor3 = Color3.fromRGB(100, 255, 140)
+            elseif fps >= 35 then
+                label.TextColor3 = Color3.fromRGB(255, 220, 100)
+            else
+                label.TextColor3 = Color3.fromRGB(255, 80, 80)
+            end
+        end
     end)
 end
 
@@ -129,37 +225,38 @@ local LAST_SCAN = 0
 
 -- ==================== ROLES ====================
 local Roles = {
-    ["SoufiwIsReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
-    ["SoufiwIsNotReal"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
-    ["MarkaDevSheriffs"] = {Name = "Owner", Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
-    ["top_creation"] = {Name = "Holder", Emoji = "🟠", Color = Color3.fromRGB(255, 140, 0)},
-    ["Awastoki"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["decim8or"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["3ds_min"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["thecknisic"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["EnlocK"] = {Name = "Dev", Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
-    ["w65vutRealVpxr"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["PawitaTB"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["xShuup"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["Yere_22"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["VynilTronix"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["Souligraphy"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["pszk"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["TisBeDrewModAcc"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["PAQUIXYZ"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["justc2yber"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["asriel_09yt"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["cool_man8773"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["eternalbinds"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["SoufiwDev"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["BIuIava"] = {Name = "Mod", Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
-    ["PanCollin"] = {Name = "Tester", Emoji = "🟣", Color = Color3.fromRGB(170, 0, 255)},
-    ["xitadoriix"] = {Name = "MVP - FAMOUS CREATOR", Emoji = "🌟", Color = Color3.fromRGB(255, 215, 0)},
-    ["Plutonem"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
-    ["JdmKooki"] = {Name = "Cat", Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
+    ["SoufiwIsReal"]       = {Name = "Owner",     Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
+    ["SoufiwIsNotReal"]    = {Name = "Owner",     Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
+    ["MarkaDevSheriffs"]   = {Name = "Owner",     Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
+    ["top_creation"]       = {Name = "Holder",    Emoji = "🟠", Color = Color3.fromRGB(255, 140, 0)},
+    ["Awastoki"]           = {Name = "Dev",       Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["decim8or"]           = {Name = "Dev",       Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["3ds_min"]            = {Name = "Dev",       Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["thecknisic"]         = {Name = "Dev",       Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["EnlocK"]             = {Name = "Dev",       Emoji = "🔵", Color = Color3.fromRGB(0, 170, 255)},
+    ["w65vutRealVpxr"]     = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["PawitaTB"]           = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["xShuup"]             = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["Yere_22"]            = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["VynilTronix"]        = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["Souligraphy"]        = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["pszk"]               = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["TisBeDrewModAcc"]    = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["PAQUIXYZ"]           = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["justc2yber"]         = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["asriel_09yt"]        = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["cool_man8773"]       = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["eternalbinds"]       = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["SoufiwDev"]          = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["BIuIava"]            = {Name = "Mod",       Emoji = "🟢", Color = Color3.fromRGB(0, 200, 100)},
+    ["PanCollin"]          = {Name = "Tester",    Emoji = "🟣", Color = Color3.fromRGB(170, 0, 255)},
+    ["xitadoriix"]         = {Name = "MVP - FAMOUS CREATOR", Emoji = "🌟", Color = Color3.fromRGB(255, 215, 0)},
+    ["Plutonem"]           = {Name = "Cat",       Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
+    ["JdmKooki"]           = {Name = "Cat",       Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
 
--- ==================== DETECCIÓN (Optimizada) ====================
+-- (Aquí van las funciones hasUnauthorizedBodyMover, getGroundInfo, createWarning, removeWarning, scanAllPlayers sin cambios)
+
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
         if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("AlignPosition") or
@@ -370,6 +467,8 @@ end
 
 -- ==================== INICIO ====================
 createLoadingScreen()
+applyLowGraphicsMode()          -- ← Activa anti-lag y low graphics
+createFPSCounter()              -- ← FPS en esquina superior derecha
 
 RunService.Heartbeat:Connect(scanAllPlayers)
 
@@ -390,4 +489,4 @@ if localPlayer.Character then
     onCharacterAdded(localPlayer.Character, localPlayer)
 end
 
-print("✅ DeltaDetector X cargado correctamente")
+print("✅ DeltaDetector X + Anti-Lag + FPS cargado correctamente")
