@@ -1,5 +1,5 @@
 -- =============================================
--- DeltaDetector X - OPTIMIZADO + ANTI-LAG + FPS COUNTER (2026)
+-- DeltaDetector X - OPTIMIZADO + ANTI-LAG + FPS COUNTER + LISTA ESTADOS (2026)
 -- =============================================
 
 local Players = game:GetService("Players")
@@ -103,12 +103,10 @@ end
 
 -- ==================== ANTI-LAG + LOW GRAPHICS MODE ====================
 local function applyLowGraphicsMode()
-    -- Forzar calidad baja (no siempre funciona al 100%, pero ayuda)
     pcall(function()
-        UserSettings().GameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel2 -- o QualityLevel1 para más bajo
+        UserSettings().GameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel2
     end)
 
-    -- Ajustes globales de Lighting (muy efectivo en low-end)
     Lighting.GlobalShadows = false
     Lighting.Brightness = 1
     Lighting.EnvironmentDiffuseScale = 0
@@ -120,14 +118,12 @@ local function applyLowGraphicsMode()
     if Lighting:FindFirstChild("DepthOfField") then Lighting.DepthOfField.Enabled = false end
     if Lighting:FindFirstChild("Blur") then Lighting.Blur.Enabled = false end
 
-    -- Quitar partículas y efectos pesados en el workspace
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Sparkles") then
             obj.Enabled = false
         end
     end
 
-    -- Texturas bajas + sin caras
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= localPlayer and player.Character then
             for _, part in ipairs(player.Character:GetDescendants()) do
@@ -143,7 +139,6 @@ local function applyLowGraphicsMode()
         end
     end
 
-    -- Listener para nuevos personajes (sin cara + low material)
     Players.PlayerAdded:Connect(function(plr)
         if plr == localPlayer then return end
         plr.CharacterAdded:Connect(function(char)
@@ -194,7 +189,6 @@ local function createFPSCounter()
             frameCount = 0
             lastTime = tick()
 
-            -- Color según rendimiento
             if fps >= 55 then
                 label.TextColor3 = Color3.fromRGB(100, 255, 140)
             elseif fps >= 35 then
@@ -204,6 +198,122 @@ local function createFPSCounter()
             end
         end
     end)
+end
+
+-- ==================== LISTA DE ESTADOS DE JUGADORES (NUEVO) ====================
+local PlayerListGui = nil
+local playerStateFrames = {}
+local playerStateData = {}   -- "clean", "suspicious", "danger"
+
+local function updatePlayerListVisual()
+    if not PlayerListGui then return end
+    
+    local list = PlayerListGui.ScrollingFrame
+    local count = 0
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == localPlayer then continue end
+        count = count + 1
+        
+        local frame = playerStateFrames[player]
+        if not frame then
+            frame = Instance.new("Frame")
+            frame.Size = UDim2.new(1, -12, 0, 34)
+            frame.BackgroundTransparency = 0.70
+            frame.BackgroundColor3 = Color3.fromRGB(18, 18, 32)
+            frame.BorderSizePixel = 0
+            frame.LayoutOrder = count
+            frame.Parent = list
+            
+            local name = Instance.new("TextLabel")
+            name.Size = UDim2.new(0.65, 0, 1, 0)
+            name.Position = UDim2.new(0.02, 0, 0, 0)
+            name.BackgroundTransparency = 1
+            name.Text = player.Name
+            name.TextColor3 = Color3.fromRGB(210, 210, 255)
+            name.TextScaled = true
+            name.Font = Enum.Font.GothamSemibold
+            name.TextXAlignment = Enum.TextXAlignment.Left
+            name.Parent = frame
+            
+            local status = Instance.new("TextLabel")
+            status.Name = "StatusLabel"
+            status.Size = UDim2.new(0.32, 0, 0.88, 0)
+            status.Position = UDim2.new(0.66, 0, 0.06, 0)
+            status.BackgroundTransparency = 0.45
+            status.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+            status.TextColor3 = Color3.fromRGB(160, 160, 160)
+            status.TextScaled = true
+            status.Font = Enum.Font.GothamBold
+            status.Text = "⌛ Cargando"
+            status.Parent = frame
+            
+            playerStateFrames[player] = frame
+        end
+        
+        local state = playerStateData[player] or "clean"
+        local statusLabel = frame.StatusLabel
+        
+        if state == "danger" then
+            statusLabel.Text = "❌ Peligro"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+            statusLabel.BackgroundColor3 = Color3.fromRGB(90, 25, 25)
+        elseif state == "suspicious" then
+            statusLabel.Text = "⚠️ Sospechoso"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 215, 90)
+            statusLabel.BackgroundColor3 = Color3.fromRGB(75, 55, 25)
+        else
+            statusLabel.Text = "✅ Limpio"
+            statusLabel.TextColor3 = Color3.fromRGB(110, 255, 150)
+            statusLabel.BackgroundColor3 = Color3.fromRGB(35, 65, 35)
+        end
+    end
+    
+    list.CanvasSize = UDim2.new(0, 0, 0, list.UIListLayout.AbsoluteContentSize.Y + 20)
+end
+
+local function createPlayerListInterface()
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "DeltaPlayerList"
+    sg.ResetOnSpawn = false
+    sg.IgnoreGuiInset = true
+    sg.Parent = localPlayer:WaitForChild("PlayerGui")
+
+    local main = Instance.new("Frame")
+    main.Size = UDim2.new(0, 260, 0.62, 0)
+    main.Position = UDim2.new(1, -270, 0.19, 0)
+    main.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
+    main.BackgroundTransparency = 0.40
+    main.BorderSizePixel = 0
+    main.Parent = sg
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 36)
+    title.BackgroundTransparency = 1
+    title.Text = "Estados Jugadores"
+    title.TextColor3 = Color3.fromRGB(190, 170, 255)
+    title.Font = Enum.Font.GothamBlack
+    title.TextScaled = true
+    title.TextStrokeTransparency = 0.75
+    title.Parent = main
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Name = "ScrollingFrame"
+    scroll.Size = UDim2.new(1, -10, 1, -44)
+    scroll.Position = UDim2.new(0, 5, 0, 40)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 5
+    scroll.CanvasSize = UDim2.new(0,0,0,0)
+    scroll.Parent = main
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = scroll
+
+    PlayerListGui = main
+    updatePlayerListVisual()
 end
 
 -- ==================== CONFIG CHEATS ====================
@@ -223,7 +333,7 @@ local LAST_POS = {}
 local FLY_TIME = {}
 local LAST_SCAN = 0
 
--- ==================== ROLES ====================
+-- ==================== ROLES (sin cambios) ====================
 local Roles = {
     ["SoufiwIsReal"]       = {Name = "Owner",     Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
     ["SoufiwIsNotReal"]    = {Name = "Owner",     Emoji = "🟡", Color = Color3.fromRGB(255, 221, 0)},
@@ -254,8 +364,6 @@ local Roles = {
     ["Plutonem"]           = {Name = "Cat",       Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
     ["JdmKooki"]           = {Name = "Cat",       Emoji = "🐾", Color = Color3.fromRGB(255, 120, 180)},
 }
-
--- (Aquí van las funciones hasUnauthorizedBodyMover, getGroundInfo, createWarning, removeWarning, scanAllPlayers sin cambios)
 
 local function hasUnauthorizedBodyMover(char)
     for _, obj in ipairs(char:GetDescendants()) do
@@ -418,7 +526,20 @@ local function scanAllPlayers()
             removeWarning(player)
             playerData[player].frames = 0
         end
+
+        -- Actualizar estado para la lista de jugadores
+        local frames = playerData[player].frames or 0
+        if frames >= CHEAT_FRAMES_TO_FLAG * 2 then
+            playerStateData[player] = "danger"
+        elseif frames >= CHEAT_FRAMES_TO_FLAG then
+            playerStateData[player] = "suspicious"
+        else
+            playerStateData[player] = "clean"
+        end
     end
+
+    -- Refrescar la lista visual (cada scan completo)
+    updatePlayerListVisual()
 end
 
 -- ==================== ROLES ====================
@@ -444,49 +565,4 @@ local function createRoleLabel(character, roleInfo)
     text.Text = roleInfo.Emoji .. " " .. roleInfo.Name
     text.TextColor3 = roleInfo.Color
     text.TextScaled = true
-    text.Font = Enum.Font.GothamBold
-    text.TextStrokeTransparency = 0
-    text.TextStrokeColor3 = Color3.new(0, 0, 0)
-    text.Parent = billboard
-end
-
-local function onCharacterAdded(character, player)
-    task.wait(1.2)
-    local roleInfo = Roles[player.Name]
-    if roleInfo then
-        createRoleLabel(character, roleInfo)
-    end
-end
-
-local function onPlayerAdded(player)
-    player.CharacterAdded:Connect(function(char)
-        onCharacterAdded(char, player)
-    end)
-    if player.Character then onCharacterAdded(player.Character, player) end
-end
-
--- ==================== INICIO ====================
-createLoadingScreen()
-applyLowGraphicsMode()          -- ← Activa anti-lag y low graphics
-createFPSCounter()              -- ← FPS en esquina superior derecha
-
-RunService.Heartbeat:Connect(scanAllPlayers)
-
-Players.PlayerAdded:Connect(onPlayerAdded)
-Players.PlayerRemoving:Connect(function(plr)
-    removeWarning(plr)
-    playerData[plr] = nil
-    LAST_POS[plr] = nil
-    FLY_TIME[plr] = nil
-end)
-
-for _, plr in ipairs(Players:GetPlayers()) do
-    onPlayerAdded(plr)
-end
-
-if localPlayer.Character then
-    task.wait(2)
-    onCharacterAdded(localPlayer.Character, localPlayer)
-end
-
-print("✅ DeltaDetector X + Anti-Lag + FPS cargado correctamente")
+    text.Font = Enum.Font
